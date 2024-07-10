@@ -1,0 +1,97 @@
+name: MAIN CICD
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "backend/**"
+      - "frontend/**"
+      
+permissions: 
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+
+jobs:
+  check_changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend_changed: ${{ steps.check_backend.outputs.backend }}
+      frontend_changed: ${{ steps.check_frontend.outputs.frontend }}
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - uses: dorny/paths-filter@v3
+      id: check_backend
+      with:
+        filters: |
+          backend:
+            - 'backend/**'
+
+    - uses: dorny/paths-filter@v3
+      id: check_frontend
+      with:
+        filters: |
+          frontend:
+            - 'frontend/**'
+
+  versioning:
+    runs-on: ubuntu-latest
+    steps:
+    - name: version
+      run: echo ${{ github.job }}
+  build_backend:
+    needs: [check_changes , versioning]
+    if: needs.check_changes.outputs.backend_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      run: echo ${{ github.job }}
+   
+
+  build_frontend:
+    needs: [check_changes]
+    if: needs.check_changes.outputs.frontend_changed == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+
+          
+  release_version:
+    needs: [build_frontend,build_backend,versioning]
+    runs-on: ubuntu-latest
+    if: always() && (needs.build_frontend.result == 'skipped' || needs.build_frontend.result == 'success' ) && (needs.build_backend.result == 'success' || needs.build_backend.result == 'skipped' )
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+  deploy_backend:
+    needs: [versioning,release_version , build_backend]
+    if: always() && (needs.build_backend.result == 'success') && (needs.release_version.result != 'failure' || needs.release_version.result != 'skipped')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+
+  deploy_frontend:
+    needs: [versioning,release_version , build_frontend]
+    if: always() && (needs.build_frontend.result == 'success') && (needs.release_version.result != 'failure' || needs.release_version.result != 'skipped')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+  deployment_notification:
+    needs: [versioning,release_version, deploy_backend , deploy_frontend]
+    runs-on: ubuntu-latest
+    if: always() && (needs.deploy_frontend.result == 'skipped' || needs.deploy_frontend.result == 'success') && (needs.deploy_backend.result == 'success' || needs.deploy_backend.result == 'skipped') && (needs.release_version.result != 'skipped') 
+    steps:
+    - uses: actions/checkout@v4
+
