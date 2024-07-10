@@ -60,6 +60,7 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v4
+      - run: cd nothing
 
           
   release_version:
@@ -72,7 +73,7 @@ jobs:
 
   deploy_backend:
     needs: [versioning,release_version , build_backend]
-    if: always() && (needs.build_backend.result == 'success') && (needs.release_version.result != 'failure' || needs.release_version.result != 'skipped')
+    if: always() && (needs.check_changes.outputs.backend_changed == 'true') && (needs.release_version.result != 'failure' || needs.release_version.result != 'skipped')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -81,12 +82,13 @@ jobs:
 
   deploy_frontend:
     needs: [versioning,release_version , build_frontend]
-    if: always() && (needs.build_frontend.result == 'success') && (needs.release_version.result != 'failure' || needs.release_version.result != 'skipped')
+    if: always() && (needs.check_changes.outputs.frontend_changed == 'true') && (needs.release_version.result != 'failure' || needs.release_version.result != 'skipped')
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+    
 
   deployment_notification:
     needs: [versioning,release_version, deploy_backend , deploy_frontend]
