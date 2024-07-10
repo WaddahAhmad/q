@@ -73,7 +73,7 @@ jobs:
 
   deploy_backend:
     needs: [versioning,release_version , build_backend]
-    if: always() && (needs.check_changes.outputs.backend_changed == 'true') && (needs.release_version.result != 'failure' || needs.release_version.result != 'skipped')
+    if: always() && (needs.check_changes.outputs.backend_changed == 'true') && (needs.release_version.result != 'failure') && (needs.release_version.result != 'skipped')
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -82,7 +82,7 @@ jobs:
 
   deploy_frontend:
     needs: [versioning,release_version , build_frontend]
-    if: always() && (needs.check_changes.outputs.frontend_changed == 'true') && (needs.release_version.result != 'failure' || needs.release_version.result != 'skipped')
+    if: always() && (needs.check_changes.outputs.frontend_changed == 'true') && (needs.release_version.result != 'failure') && (needs.release_version.result != 'skipped')
     runs-on: ubuntu-latest
 
     steps:
