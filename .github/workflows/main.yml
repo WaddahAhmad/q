@@ -51,7 +51,7 @@ jobs:
     steps:
     - name: Checkout code
       run: echo ${{ github.job }}
-   
+    - run: cd nothing
 
   build_frontend:
     needs: [check_changes]
@@ -60,7 +60,7 @@ jobs:
     steps:
       - name: checkout
         uses: actions/checkout@v4
-      - run: cd nothing
+
 
           
   release_version:
